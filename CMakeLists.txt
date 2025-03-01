@@ -6,7 +6,7 @@ set(GLAD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libs/glad")
 set(GLM_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libs/glm")
 set(STB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libs/stb")
 set(ASSIMP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libs/assimp")
-set(FREETYPE_DIR "C:/msys64/mingw64/")
+set(FREETYPE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libs/freetype")
 
 find_package(OpenGL REQUIRED)
 

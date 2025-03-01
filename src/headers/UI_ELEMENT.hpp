@@ -1,5 +1,7 @@
 #pragma once
 #include "Transform.hpp"
+#include "gl_classes/Shader.hpp"
+#include "Camera.hpp"
 
 namespace UI {
     class UI_ELEMENT : public Transform {

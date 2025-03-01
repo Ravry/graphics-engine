@@ -5,15 +5,22 @@ std::unique_ptr<Shader> defaultShader;
 std::unique_ptr<Shader> cubemapShader;
 std::unique_ptr<Shader> screenShader;
 std::unique_ptr<Shader> uiShader;
+
 std::unique_ptr<Texture> texture;
+std::unique_ptr<Texture> barrierAlbedoTexture;
+std::unique_ptr<Texture> barrierNormalTexture;
 std::unique_ptr<Cubemap> cubemap;
+
 std::unique_ptr<Object> cubemapObject;
 std::unique_ptr<Object> quadObject;
 std::unique_ptr<Object> sphereObject;
 std::unique_ptr<Object> modelObject;
+
 std::unique_ptr<FBO> fbo;
 std::unique_ptr<FBO> intermediateFBO;
+
 std::unique_ptr<FontRenderer> fontRenderer;
+
 std::unique_ptr<UI::IMAGE> ui_image;
 
 std::map<int, std::string> gBufferTextures {
@@ -90,8 +97,12 @@ Renderer::Renderer(float width, float height) {
     sphereObject = std::make_unique<Object>(sphereGeom.vertices, sphereGeom.indices, defaultAttribs);
     sphereObject->translate(glm::vec3(0, 1.2f, 0));
 
-    Model model = Model("resources/model/TempleRuin_02.DAE");
+    barrierAlbedoTexture = std::make_unique<Texture>("resources/model/barrier/diffuse.tga", GL_LINEAR);
+    barrierNormalTexture = std::make_unique<Texture>("resources/model/barrier/normal.tga", GL_LINEAR);
+    Model model = Model("resources/model/barrier/barrier.fbx");
     modelObject = std::make_unique<Object>(model.meshes, defaultAttribs);
+    modelObject->rotate(glm::vec3(1, 0, 0), -90.f);
+    modelObject->scale(glm::vec3(.1f));
 
     screenShader = std::make_unique<Shader>("resources/shader/screen/screen.vert", "resources/shader/screen/screen.frag");
     
@@ -128,7 +139,9 @@ void Renderer::render(float width, float height, float deltaTime) {
 
     glDepthFunc(GL_LESS);
 
-    glActiveTexture(GL_TEXTURE0);
+    glActiveTexture(GL_TEXTURE1);
+    barrierAlbedoTexture->bind();
+
     texture->bind();
 
     defaultShader->use();
@@ -143,14 +156,21 @@ void Renderer::render(float width, float height, float deltaTime) {
     defaultShader->SetInt("tex", 0);
     defaultShader->SetInt("cubemap", 1);
     
-    quadObject->render();
-
+    // quadObject->render();
     defaultShader->SetVector3("texTint", glm::vec3(0, .8, 0));
     defaultShader->SetFloat("metallic", 0.f);
     defaultShader->SetMatrix4x4("model", sphereObject->matrix);
-    sphereObject->render();
+    // sphereObject->render();
 
-    defaultShader->SetMatrix4x4("model", sphereObject->matrix);
+
+    glActiveTexture(GL_TEXTURE0);
+    barrierNormalTexture->bind();
+
+    defaultShader->SetInt("tex", 1);
+    defaultShader->SetInt("normalMap", 0);
+    defaultShader->SetVector2("texTiling", glm::vec2(1));
+    defaultShader->SetVector3("texTint", glm::vec3(1));
+    defaultShader->SetMatrix4x4("model", modelObject->matrix);
     modelObject->render();
     texture->unbind();
     defaultShader->unuse();
