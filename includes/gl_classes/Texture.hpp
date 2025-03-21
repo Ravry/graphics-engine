@@ -12,10 +12,12 @@ private:
 public:
     unsigned int id;
     Texture(const char* filename, GLint filtermode);
-    Texture(std::vector<std::string>& textures_faces);
     Texture(int width, int height, GLenum target, GLint internalformat, GLint format, GLenum type = GL_UNSIGNED_BYTE);
     Texture(int width, int heigth, GLenum target, const void* pixels);
+    Texture(std::vector<std::string>& textures_faces);
+    Texture(const char* cubemapFile);
     void bind();
+    void bind(GLenum texture);
     void unbind();
     void destroy();
 };

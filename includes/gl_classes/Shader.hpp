@@ -10,20 +10,20 @@
 
 class Shader {
 private:
-    unsigned int id;
     const char* vertexFile;
     const char* fragmentFile;
     int getUniformLocation(const char* uniform);
 public:
+    unsigned int id;
     Shader(const char* vertexFile, const char* fragmentFile);
-    void use();
+    Shader* use();
     void unuse();
     void recompile();
     void destroy();
 
-    void SetInt(const char* uniform, int value);
-    void SetFloat(const char* uniform, float value);
-    void SetVector2(const char* uniform, glm::vec2 value);
-    void SetVector3(const char* uniform, glm::vec3 value);
-    void SetMatrix4x4(const char* uniform, glm::mat4 value);
+    Shader* SetInt(const char* uniform, int value);
+    Shader* SetFloat(const char* uniform, float value);
+    Shader* SetVector2(const char* uniform, glm::vec2 value);
+    Shader* SetVector3(const char* uniform, glm::vec3 value);
+    Shader* SetMatrix4x4(const char* uniform, glm::mat4 value);
 };

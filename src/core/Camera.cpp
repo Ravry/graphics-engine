@@ -1,20 +1,19 @@
-#include "headers/Camera.hpp"
+#include "Camera.hpp"
 
-Camera::Camera(float width, float height) : Transform() {
-    projection = glm::perspective(glm::radians(60.f), width/height, .1f, 1000.f);
-    ortho = glm::ortho(0.f, width, 0.f, height);
-    this->position = glm::vec3(0);
-    this->worldUP = glm::vec3(0, 1, 0);
-    this->yaw = -90.0f;
-    this->pitch = 0.0f;
-    this->lastX = width / 2.0f;
-    this->lastY = height / 2.0f;
-    this->sens = 5.f;
-    this->speed = 40.f;
-
-    this->width = width;
-    this->height = height;
-}
+Camera::Camera(float width, float height) : Transform(), 
+    projection(glm::perspective(glm::radians(60.f), width/height, .1f, 1000.f)), 
+    ortho(glm::ortho(0.f, width, 0.f, height)),
+    position(glm::vec3(0)),
+    worldUP(glm::vec3(0, 1, 0)),
+    yaw(-90.f),
+    pitch(0.f),
+    lastX(width / 2.f),
+    lastY(height / 2.f),
+    sens(5.f),
+    speed(40.f),
+    width(width),
+    height(height)
+{}
 
 void Camera::handleMouseInput(const Input& input, float deltaTime) {
     float xpos = input.x_mouse;

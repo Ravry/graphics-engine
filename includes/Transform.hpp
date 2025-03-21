@@ -10,10 +10,10 @@ public:
     glm::mat4 matrix;
     
     Transform(glm::vec3 vec = glm::vec3(0), float rotationDeg = 0, glm::vec3 rotationAxis = glm::vec3(0), glm::vec3 scale = glm::vec3(1));
-    void translate(glm::vec3 vec);
-    void rotate(glm::vec3 axis, float rotationDeg);
-    void scale(glm::vec3 scalar);
-    void setPosition(glm::vec3 position);
-    void setRotation(glm::vec3 axis, float rotationDeg);
-    void setScale(glm::vec3 scalar);
+    Transform* translate(glm::vec3 vec);
+    Transform* rotate(glm::vec3 axis, float rotationDeg);
+    Transform* scale(glm::vec3 scalar);
+    Transform* setPosition(glm::vec3 position);
+    Transform* setRotation(glm::vec3 axis, float rotationDeg);
+    Transform* setScale(glm::vec3 scalar);
 };

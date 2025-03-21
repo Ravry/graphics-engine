@@ -1,6 +1,5 @@
 #pragma once
 #include "Texture.hpp"
-#include "RBO.hpp"
 #include <memory>
 #include "../Camera.hpp"
 
@@ -17,7 +16,7 @@ public:
 
     FBO(int width, int height, GLenum target);
     void bind(GLenum target);
-    void blit(Camera& camera, GLenum source);
+    void blit(std::shared_ptr<Camera>& camera, GLenum source);
     void unbind();
     void refactor(int width, int height);
     void destroy();

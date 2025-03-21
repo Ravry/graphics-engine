@@ -1,4 +1,4 @@
-#include "headers/Input.hpp"
+#include "Input.hpp"
 
 
 void Input::update(GLFWwindow* window) {

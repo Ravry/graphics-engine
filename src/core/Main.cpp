@@ -1,6 +1,6 @@
 #define GLFW_INCLUDE_NONE
 #define STB_IMAGE_IMPLEMENTATION
-#include "headers/Window.hpp"
+#include "Window.hpp"
 const unsigned int SCR_WIDTH = 1280;
 const unsigned int SCR_HEIGHT = 720;
 

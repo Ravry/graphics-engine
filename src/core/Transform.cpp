@@ -1,4 +1,4 @@
-#include "headers/Transform.hpp"
+#include "Transform.hpp"
 
 Transform::Transform(glm::vec3 vec, float rotationDeg, glm::vec3 rotationAxis, glm::vec3 scale) {
 	// matrix = glm::scale(
@@ -12,23 +12,27 @@ Transform::Transform(glm::vec3 vec, float rotationDeg, glm::vec3 rotationAxis, g
     matrix = glm::mat4(1);
 }
 
-void Transform::translate(glm::vec3 vec) {
+Transform* Transform::translate(glm::vec3 vec) {
 	matrix = glm::translate(matrix, vec);
+    return this;
 }
 
-void Transform::rotate(glm::vec3 axis, float rotationDeg) {
+Transform* Transform::rotate(glm::vec3 axis, float rotationDeg) {
     matrix = glm::rotate(matrix, glm::radians(rotationDeg), axis);
+    return this;
 }
 
-void Transform::scale(glm::vec3 scalar) {
+Transform* Transform::scale(glm::vec3 scalar) {
     matrix = glm::scale(matrix, scalar);
+    return this;
 }
 
-void Transform::setPosition(glm::vec3 position) {
+Transform* Transform::setPosition(glm::vec3 position) {
     matrix[3] = glm::vec4(position, 1);
+    return this;
 }
 
-void Transform::setRotation(glm::vec3 axis, float rotationDeg) {
+Transform* Transform::setRotation(glm::vec3 axis, float rotationDeg) {
     glm::vec3 translation = glm::vec3(matrix[3]);
     glm::vec3 scale = glm::vec3(
         glm::length(glm::vec3(matrix[0])),  // X-axis scale
@@ -43,9 +47,10 @@ void Transform::setRotation(glm::vec3 axis, float rotationDeg) {
     matrix[2] *= scale.z;
     
     matrix[3] = glm::vec4(translation, 1.f);
+    return this;
 }
 
-void Transform::setScale(glm::vec3 scalar) {
+Transform* Transform::setScale(glm::vec3 scalar) {
     glm::vec3 translation = glm::vec3(matrix[3]);
     glm::mat3 rotationMatrix = glm::mat3(matrix);
     rotationMatrix[0] = glm::normalize(rotationMatrix[0]);
@@ -59,4 +64,5 @@ void Transform::setScale(glm::vec3 scalar) {
     newTransform[3] = glm::vec4(translation, 1.0f);
     
     matrix = newTransform;
+    return this;
 }

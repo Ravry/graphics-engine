@@ -1,6 +1,8 @@
-#include "headers/gl_classes/FBO.hpp"
+#include "gl_classes/FBO.hpp"
 
 FBO::FBO(int width, int height, GLenum target) : target(target) {
+    glActiveTexture(GL_TEXTURE0);
+
     glGenFramebuffers(1, &id);
     bind(GL_FRAMEBUFFER);
     
@@ -30,10 +32,10 @@ void FBO::bind(GLenum target) {
     glBindFramebuffer(target, id);  
 }
 
-void FBO::blit(Camera& camera, GLenum source) {
+void FBO::blit(std::shared_ptr<Camera>& camera, GLenum source) {
     glReadBuffer(source);
     glDrawBuffer(source);
-    glBlitFramebuffer(0, 0, camera.width, camera.height, 0, 0, camera.width, camera.height, GL_COLOR_BUFFER_BIT, GL_NEAREST);    
+    glBlitFramebuffer(0, 0, camera->width, camera->height, 0, 0, camera->width, camera->height, GL_COLOR_BUFFER_BIT, GL_NEAREST);    
 }
 
 void FBO::unbind() {

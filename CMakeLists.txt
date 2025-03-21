@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.31)
 project(graphics-engine)
 
+set(CMAKE_CXX_STANDARD 17)
+
 set(GLFW_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libs/glfw")
 set(GLAD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libs/glad")
 set(GLM_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libs/glm")
@@ -13,10 +15,11 @@ find_package(OpenGL REQUIRED)
 add_library(glad STATIC ${GLAD_DIR}/src/glad.c)
 target_include_directories(glad PUBLIC ${GLAD_DIR}/include)
 
-file(GLOB SRC_FILES "src/*.cpp")
+file(GLOB_RECURSE SRC_FILES "src/*.cpp")
 add_executable(${PROJECT_NAME} ${SRC_FILES})
 
-target_include_directories(${PROJECT_NAME} PRIVATE 
+target_include_directories(${PROJECT_NAME} PRIVATE
+    includes 
     ${GLFW_DIR}/include
     ${GLAD_DIR}/include
     ${GLM_DIR}

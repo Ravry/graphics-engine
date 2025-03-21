@@ -1,4 +1,4 @@
-#include "headers/gl_classes/Shader.hpp"
+#include "gl_classes/Shader.hpp"
 
 std::string readFileContent(const char* filename) {
     std::string fileContent;
@@ -57,8 +57,9 @@ Shader::Shader(const char* vertexFile, const char* fragmentFile) : vertexFile(ve
     glDeleteShader(fragmentShader);
 }
 
-void Shader::use() {
+Shader* Shader::use() {
     glUseProgram(id);
+    return this;
 }
 
 void Shader::unuse() {
@@ -115,27 +116,32 @@ int Shader::getUniformLocation(const char* uniform) {
     return glGetUniformLocation(id, uniform);
 }
 
-void Shader::SetInt(const char* uniform, int value) {
+Shader* Shader::SetInt(const char* uniform, int value) {
     int location = getUniformLocation(uniform);
     glUniform1i(location, value);
+    return this;
 }
 
-void Shader::SetFloat(const char* uniform, float value) {\
+Shader* Shader::SetFloat(const char* uniform, float value) {
     int location = getUniformLocation(uniform);
     glUniform1f(location, value); 
+    return this;
 }
 
-void Shader::SetVector2(const char* uniform, glm::vec2 value)  {
+Shader* Shader::SetVector2(const char* uniform, glm::vec2 value)  {
     int location = getUniformLocation(uniform);
     glUniform2f(location, value.x, value.y);
+    return this;
 }
 
-void Shader::SetVector3(const char* uniform, glm::vec3 value) {
+Shader* Shader::SetVector3(const char* uniform, glm::vec3 value) {
     int location = getUniformLocation(uniform);
     glUniform3f(location, value.x, value.y, value.z);
+    return this;
 }
 
-void Shader::SetMatrix4x4(const char* uniform, glm::mat4 value)  {
+Shader* Shader::SetMatrix4x4(const char* uniform, glm::mat4 value)  {
     int location = getUniformLocation(uniform);
     glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(value));
+    return this;
 }

@@ -1,4 +1,4 @@
-#include "headers/gl_classes/Texture.hpp"
+#include "gl_classes/Texture.hpp"
 
 Texture::Texture(const char* filename, GLint filtermode) : target(GL_TEXTURE_2D) {
     glGenTextures(1, &id);
@@ -25,6 +25,7 @@ Texture::Texture(std::vector<std::string>& textures_faces) : target(GL_TEXTURE_C
             GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 
             0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data
         );
+        stbi_image_free(data);
     }
 
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -32,6 +33,72 @@ Texture::Texture(std::vector<std::string>& textures_faces) : target(GL_TEXTURE_C
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);  
+}
+
+// Helper function to extract a face from the cubemap image
+void extractFace(unsigned char* srcData, unsigned char* dstData, int fullWidth, int fullHeight, 
+    int channels, int faceX, int faceY, int faceWidth, int faceHeight) {
+    for (int y = 0; y < faceHeight; y++) {
+        for (int x = 0; x < faceWidth; x++) {
+        int srcPos = ((faceY * faceHeight + y) * fullWidth + (faceX * faceWidth + x)) * channels;
+        int dstPos = (y * faceWidth + x) * channels;
+        for (int c = 0; c < channels; c++) {
+            dstData[dstPos + c] = srcData[srcPos + c];
+        }
+    }
+}
+}
+
+Texture::Texture(const char* cubemapFile) : target(GL_TEXTURE_CUBE_MAP) {
+    glGenTextures(1, &id);
+    bind();
+   
+    int width, height, nrChannels;
+    unsigned char *data = stbi_load(cubemapFile, &width, &height, &nrChannels, 0);
+    if (data) {
+        int faceWidth = width / 4;
+        int faceHeight = height / 3;
+        unsigned char* faceData = new unsigned char[faceWidth * faceHeight * nrChannels];
+        
+        // Extract each face from the full image
+        // Standard cross layout:
+        //      [+Y]
+        // [-X] [+Z] [+X] [-Z]
+        //      [-Y]
+        
+        extractFace(data, faceData, width, height, nrChannels, 2, 1, faceWidth, faceHeight);
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_RGBA, faceWidth, faceHeight, 0,
+                     GL_RGBA, GL_UNSIGNED_BYTE, faceData);
+        
+        extractFace(data, faceData, width, height, nrChannels, 0, 1, faceWidth, faceHeight);
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, GL_RGBA, faceWidth, faceHeight, 0,
+                     GL_RGBA, GL_UNSIGNED_BYTE, faceData);
+        
+        extractFace(data, faceData, width, height, nrChannels, 1, 0, faceWidth, faceHeight);
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0, GL_RGBA, faceWidth, faceHeight, 0,
+                     GL_RGBA, GL_UNSIGNED_BYTE, faceData);
+        
+        extractFace(data, faceData, width, height, nrChannels, 1, 2, faceWidth, faceHeight);
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, GL_RGBA, faceWidth, faceHeight, 0,
+                     GL_RGBA, GL_UNSIGNED_BYTE, faceData);
+        
+        extractFace(data, faceData, width, height, nrChannels, 1, 1, faceWidth, faceHeight);
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, GL_RGBA, faceWidth, faceHeight, 0,
+                     GL_RGBA, GL_UNSIGNED_BYTE, faceData);
+        
+        extractFace(data, faceData, width, height, nrChannels, 3, 1, faceWidth, faceHeight);
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, GL_RGBA, faceWidth, faceHeight, 0,
+                     GL_RGBA, GL_UNSIGNED_BYTE, faceData);
+        
+        delete[] faceData;
+        
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    }
+    stbi_image_free(data);
 }
 
 Texture::Texture(int width, int height, GLenum target, GLint internalformat, GLint format, GLenum type) : target(target) {
@@ -72,6 +139,11 @@ Texture::Texture(int width, int height, GLenum target, const void* pixels) {
 }
 
 void Texture::bind() {
+	glBindTexture(this->target, id);
+}
+
+void Texture::bind(GLenum texture) {
+    glActiveTexture(texture);
 	glBindTexture(this->target, id);
 }
 

@@ -1,4 +1,4 @@
-#include "headers/gl_classes/EBO.hpp"
+#include "gl_classes/EBO.hpp"
 
 EBO::EBO() {
     glGenBuffers(1, &id);

@@ -1,4 +1,4 @@
-#include "headers/FontRenderer.hpp"
+#include "FontRenderer.hpp"
 
 
 FontRenderer::FontRenderer(const char* fontfile, const int fontsize) {
@@ -84,6 +84,8 @@ FontRenderer::FontRenderer(const char* fontfile, const int fontsize) {
 }
 
 void FontRenderer::render(std::string text, glm::mat4 projection, glm::vec2 position, glm::vec3 color, float scale) {
+    glActiveTexture(GL_TEXTURE0);
+    
     shader->use();
     shader->SetMatrix4x4("projection", projection);
     shader->SetFloat("time", glfwGetTime());
