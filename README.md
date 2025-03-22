@@ -4,9 +4,9 @@ OpenGL graphics-engine project i'm currently working on
 A simple and opengl graphics-engine. 🔥
 
 ## Screenshots
-![Screenshot](https://raw.githubusercontent.com/ravry/graphics-engine/screenshots/screenshot_1.png)
-![Screenshot](https://raw.githubusercontent.com/ravry/graphics-engine/screenshots/screenshot_2.png)
-![Screenshot](https://raw.githubusercontent.com/ravry/graphics-engine/screenshots/screenshot_3.png)
+![Screenshot](https://raw.githubusercontent.com/ravry/graphics-engine/main/screenshots/screenshot_1.png)
+![Screenshot](https://raw.githubusercontent.com/ravry/graphics-engine/main/screenshots/screenshot_2.png)
+![Screenshot](https://raw.githubusercontent.com/ravry/graphics-engine/main/screenshots/screenshot_3.png)
 
 ## Contributing
 
