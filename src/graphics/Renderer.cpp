@@ -99,8 +99,8 @@ Renderer::Renderer(float width, float height) {
     camera = std::make_shared<Camera>(width, height);
 }
 
-void Renderer::update(const Input& input, float deltaTime) {
-    camera->update(input, deltaTime);
+void Renderer::update(bool windowFocused, const Input& input, float deltaTime) {
+    camera->update(windowFocused, input, deltaTime);
 }
 
 void Renderer::render(float width, float height, float deltaTime) {

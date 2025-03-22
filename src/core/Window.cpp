@@ -40,8 +40,8 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
                         break;
                     }
                     case GLFW_KEY_C: {    
-                        cursorDisabled = !cursorDisabled;
-                        glfwSetInputMode(window, GLFW_CURSOR, cursorDisabled ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+                        win->focused = !win->focused;
+                        glfwSetInputMode(window, GLFW_CURSOR, win->focused ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
                         break;
                     }
                     case GLFW_KEY_R: {
@@ -90,6 +90,13 @@ Window::Window(const char* title, const int width, const int height) : width(wid
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGui::StyleColorsDark();
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 130");
+
 }
 
 void Window::run() {
@@ -107,9 +114,22 @@ void Window::run() {
 
         glfwPollEvents();
         input->update(window);
-        renderer->update(*input, deltaTime);
 
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+        ImGui::Begin("configure");
+        ImGui::Text("Hello World!");
+        if (ImGui::Button("Click Me")) {
+            std::cout << "Button clicked!" << std::endl;
+        }
+        ImGui::End();
+
+        renderer->update(this->focused, *input, deltaTime);
         renderer->render(width, height, deltaTime);
+    
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         glfwSwapBuffers(window);
     }
@@ -119,6 +139,10 @@ void Window::run() {
 }
 
 void Window::destroy() {
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+    glfwDestroyWindow(window);
     glfwTerminate();
 }
 

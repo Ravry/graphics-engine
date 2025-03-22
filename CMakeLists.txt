@@ -9,14 +9,18 @@ set(GLM_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libs/glm")
 set(STB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libs/stb")
 set(ASSIMP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libs/assimp")
 set(FREETYPE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libs/freetype")
+set(CURL_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libs/curl")
+set(NLOHMANN_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libs/nlohmann")
+set(IMGUI_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libs/imgui")
 
 find_package(OpenGL REQUIRED)
 
 add_library(glad STATIC ${GLAD_DIR}/src/glad.c)
 target_include_directories(glad PUBLIC ${GLAD_DIR}/include)
 
+file(GLOB_RECURSE IMGUI_FILES "${IMGUI_DIR}/*.cpp")
 file(GLOB_RECURSE SRC_FILES "src/*.cpp")
-add_executable(${PROJECT_NAME} ${SRC_FILES})
+add_executable(${PROJECT_NAME} ${IMGUI_FILES} ${SRC_FILES})
 
 target_include_directories(${PROJECT_NAME} PRIVATE
     includes 
@@ -26,12 +30,16 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${STB_DIR}
     ${ASSIMP_DIR}/include
     ${FREETYPE_DIR}/include/freetype2/
+    ${CURL_DIR}/include
+    ${NLOHMANN_DIR}/include
+    ${IMGUI_DIR}
 )
 
 target_link_directories(${PROJECT_NAME} PRIVATE 
     ${GLFW_DIR}/lib-mingw-w64
     ${FREETYPE_DIR}/lib
     ${ASSIMP_DIR}/lib
+    ${CURL_DIR}/lib
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
@@ -40,6 +48,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     OpenGL::GL
     freetype
     assimp
+    libcurl
 )
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD

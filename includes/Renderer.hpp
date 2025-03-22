@@ -13,7 +13,7 @@ public:
     unsigned int gBufferIndex = 0;
 
     Renderer(float width, float height);
-    void update(const Input& input, float deltaTime);
+    void update(bool windowFocused, const Input& input, float deltaTime);
     void render(float width, float height, float deltaTime);
     void refactor(float width, float height);
     void recompileShaders();
