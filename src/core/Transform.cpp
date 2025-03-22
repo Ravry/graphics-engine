@@ -1,13 +1,13 @@
 #include "Transform.hpp"
 
 Transform::Transform(glm::vec3 vec, float rotationDeg, glm::vec3 rotationAxis, glm::vec3 scale) {
-	// matrix = glm::scale(
-    //     glm::rotate(
-    //         glm::translate(glm::mat4(1), vec),
-    //         glm::radians(rotationDeg), rotationAxis
-    //     ),
-    //     scale
-    // );
+	matrix = glm::scale(
+        glm::rotate(
+            glm::translate(glm::mat4(1), vec),
+            glm::radians(rotationDeg), rotationAxis
+        ),
+        scale
+    );
 
     matrix = glm::mat4(1);
 }

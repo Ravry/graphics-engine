@@ -45,7 +45,7 @@ namespace Geometry {
             6, 2, 1
         };
 
-        return Geom{
+        return Geom {
             cubeVertices,
             cubeIndices
         };
@@ -64,7 +64,10 @@ namespace Geometry {
             2, 3, 0  
         };
     
-        return Geom { vertices, indices };
+        return Geom {
+            vertices,
+            indices
+        };
     }    
 
     static Geom createSphere(const int latitudeBands, const int longitudeBands, const float radius)
@@ -121,10 +124,163 @@ namespace Geometry {
             }
         }
 
-        return Geom{
+        return Geom {
             sphereVertices,
             sphereIndices
         };
     }
 
+    static Geom createCylinder(const int segments, const float cylinderRadius, const float cylinderHeight) {
+        const float halfHeight = cylinderHeight * 0.5f;
+    
+        std::vector<float> cylinderVertices;
+        std::vector<unsigned int> cylinderIndices;
+    
+        // === TOP CAP ===
+        // Center vertex
+        int topCenterIndex = 0;
+        cylinderVertices.push_back(0.0f);      // position x
+        cylinderVertices.push_back(halfHeight); // position y
+        cylinderVertices.push_back(0.0f);      // position z
+    
+        cylinderVertices.push_back(0.0f);      // texCoord x
+        cylinderVertices.push_back(0.0f);      // texCoord y
+    
+        cylinderVertices.push_back(0.0f);      // normal x
+        cylinderVertices.push_back(1.0f);      // normal y
+        cylinderVertices.push_back(0.0f);      // normal z
+    
+        // Top ring vertices
+        for (int i = 0; i <= segments; i++) {
+            float theta = (float)i / (float)segments * 2.0f * M_PI;
+            float x = cylinderRadius * cos(theta);
+            float z = cylinderRadius * sin(theta);
+    
+            // Position
+            cylinderVertices.push_back(x);
+            cylinderVertices.push_back(halfHeight);
+            cylinderVertices.push_back(z);
+            
+            // TexCoord
+            cylinderVertices.push_back(0.f);
+            cylinderVertices.push_back(0.f);
+    
+            // Normal (pointing up for cap)
+            cylinderVertices.push_back(0.0f);
+            cylinderVertices.push_back(1.0f);
+            cylinderVertices.push_back(0.0f);
+        }
+    
+        // === BOTTOM CAP ===
+        // Center vertex
+        int bottomCenterIndex = cylinderVertices.size() / 8;
+        cylinderVertices.push_back(0.0f);       // position x
+        cylinderVertices.push_back(-halfHeight); // position y
+        cylinderVertices.push_back(0.0f);       // position z
+    
+        cylinderVertices.push_back(0.0f);      // texCoord x
+        cylinderVertices.push_back(0.0f);      // texCoord y
+    
+        cylinderVertices.push_back(0.0f);       // normal x
+        cylinderVertices.push_back(-1.0f);      // normal y
+        cylinderVertices.push_back(0.0f);       // normal z
+    
+        // Bottom ring vertices
+        for (int i = 0; i <= segments; i++) {
+            float theta = (float)i / (float)segments * 2.0f * M_PI;
+            float x = cylinderRadius * cos(theta);
+            float z = cylinderRadius * sin(theta);
+    
+            // Position
+            cylinderVertices.push_back(x);
+            cylinderVertices.push_back(-halfHeight);
+            cylinderVertices.push_back(z);
+    
+            // TexCoord
+            cylinderVertices.push_back(0.f);
+            cylinderVertices.push_back(0.f);
+    
+            // Normal (pointing down for bottom cap)
+            cylinderVertices.push_back(0.0f);
+            cylinderVertices.push_back(-1.0f);
+            cylinderVertices.push_back(0.0f);
+        }
+        
+        // === SIDE VERTICES ===
+        int sideStartIndex = cylinderVertices.size() / 8;
+        for (int i = 0; i <= segments; i++) {
+            float theta = (float)i / (float)segments * 2.0f * M_PI;
+            float x = cylinderRadius * cos(theta);
+            float z = cylinderRadius * sin(theta);
+    
+            // Normal for the side (pointing outward)
+            float nx = cos(theta);
+            float nz = sin(theta);
+    
+            // Top ring vertex
+            cylinderVertices.push_back(x);           // position x
+            cylinderVertices.push_back(halfHeight);  // position y
+            cylinderVertices.push_back(z);           // position z
+    
+            // TexCoord
+            cylinderVertices.push_back((float)i / segments); // adjust this for proper texturing
+            cylinderVertices.push_back(1.0f);             // texCoord y (top)
+    
+            cylinderVertices.push_back(nx);          // normal x
+            cylinderVertices.push_back(0.0f);        // normal y
+            cylinderVertices.push_back(nz);          // normal z
+    
+            // Bottom ring vertex
+            cylinderVertices.push_back(x);            // position x
+            cylinderVertices.push_back(-halfHeight);  // position y
+            cylinderVertices.push_back(z);            // position z
+    
+            // TexCoord
+            cylinderVertices.push_back((float)i / segments); // adjust this for proper texturing
+            cylinderVertices.push_back(0.0f);             // texCoord y (bottom)
+    
+            cylinderVertices.push_back(nx);           // normal x
+            cylinderVertices.push_back(0.0f);         // normal y
+            cylinderVertices.push_back(nz);           // normal z
+        }
+    
+        // === TOP CAP INDICES ===
+        for (int i = 1; i <= segments; i++) {
+            // Flipped order to reverse winding direction for correct culling
+            cylinderIndices.push_back(topCenterIndex);
+            cylinderIndices.push_back(i);
+            cylinderIndices.push_back(i + 1);
+        }
+    
+        // === BOTTOM CAP INDICES ===
+        for (int i = 1; i <= segments; i++) {
+            // Flipped order to reverse winding direction for correct culling
+            cylinderIndices.push_back(bottomCenterIndex);
+            cylinderIndices.push_back(bottomCenterIndex + i + 1);
+            cylinderIndices.push_back(bottomCenterIndex + i);
+        }
+    
+        // === SIDE INDICES ===
+        for (int i = 0; i < segments; i++) {
+            int top1 = sideStartIndex + (i * 2);
+            int top2 = sideStartIndex + (i * 2) + 2;
+            int bottom1 = sideStartIndex + (i * 2) + 1;
+            int bottom2 = sideStartIndex + (i * 2) + 3;
+    
+            // Triangle 1 (flipped winding order)
+            cylinderIndices.push_back(top1);
+            cylinderIndices.push_back(top2);
+            cylinderIndices.push_back(bottom1);
+    
+            // Triangle 2 (flipped winding order)
+            cylinderIndices.push_back(top2);
+            cylinderIndices.push_back(bottom2);
+            cylinderIndices.push_back(bottom1);
+        }
+    
+        return Geom {
+            cylinderVertices,
+            cylinderIndices
+        };
+    }
 };

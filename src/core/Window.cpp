@@ -40,6 +40,11 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
                         break;
                     }
                     case GLFW_KEY_C: {    
+                        if (!win->focused)
+                        {
+                            win->renderer->camera->lastX = win->input->x_mouse;
+                            win->renderer->camera->lastY = win->input->y_mouse;
+                        }
                         win->focused = !win->focused;
                         glfwSetInputMode(window, GLFW_CURSOR, win->focused ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
                         break;
@@ -93,7 +98,7 @@ Window::Window(const char* title, const int width, const int height) : width(wid
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImGui::StyleColorsDark();
+    ImGui::StyleColorsClassic();
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 130");
 
@@ -115,16 +120,7 @@ void Window::run() {
         glfwPollEvents();
         input->update(window);
 
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
-        ImGui::Begin("configure");
-        ImGui::Text("Hello World!");
-        if (ImGui::Button("Click Me")) {
-            std::cout << "Button clicked!" << std::endl;
-        }
-        ImGui::End();
-
+        renderer->imgui();
         renderer->update(this->focused, *input, deltaTime);
         renderer->render(width, height, deltaTime);
     

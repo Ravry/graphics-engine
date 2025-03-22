@@ -6,14 +6,14 @@
 
 class Camera : public Transform {
 private:
-    float sens;
     float yaw, pitch;
-    float lastX, lastY;
-    float speed;
 
     void handleMouseInput(const Input& input, float deltaTime);
     void handleKeyboardInput(const Input& input, float deltaTime);
 public:
+    float sens;
+    float speed;
+    float lastX, lastY;
     glm::vec3 position;
     glm::vec3 front;
     glm::vec3 up;

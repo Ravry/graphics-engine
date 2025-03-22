@@ -58,6 +58,7 @@ void Camera::handleKeyboardInput(const Input& input, float deltaTime) {
 void Camera::update(bool windowFocused, const Input& input, float deltaTime) {
     if (!windowFocused)
         return;
+        
     handleMouseInput(input, deltaTime);
     handleKeyboardInput(input, deltaTime);
     matrix = glm::lookAt(position, position + front, up);

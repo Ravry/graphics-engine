@@ -11,11 +11,12 @@ std::map<int, std::string> gBufferTextures {
     { 4, "g_depth" }
 };
 
+std::unique_ptr<Object> atomSphereObj;
+std::unique_ptr<Object> bondCylinderObj;
+
 std::shared_ptr<FBO> fbo;
 std::shared_ptr<FBO> intermediateFBO;
 std::shared_ptr<FontRenderer> fontRenderer;
-std::shared_ptr<Camera> camera;
-
 
 std::vector<std::string> texture_faces {
     "resources/texture/cubemap/skybox_1/right.png",
@@ -27,14 +28,39 @@ std::vector<std::string> texture_faces {
 };
 
 Renderer::Renderer(float width, float height) {
+    /**
+    * ███████╗██╗  ██╗ █████╗ ██████╗ ███████╗██████╗ ███████╗
+    * ██╔════╝██║  ██║██╔══██╗██╔══██╗██╔════╝██╔══██╗██╔════╝
+    * ███████╗███████║███████║██║  ██║█████╗  ██████╔╝███████╗
+    * ╚════██║██╔══██║██╔══██║██║  ██║██╔══╝  ██╔══██╗╚════██║
+    * ███████║██║  ██║██║  ██║██████╔╝███████╗██║  ██║███████║
+    * ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚══════╝╚═╝  ╚═╝╚══════╝
+    */
     shaders["defaultShader"] = std::make_shared<Shader>("resources/shader/default/default.vert", "resources/shader/default/default.frag");
     shaders["cubemapShader"] = std::make_shared<Shader>("resources/shader/cubemap/cubemap.vert", "resources/shader/cubemap/cubemap.frag");
     shaders["screenShader"] = std::make_shared<Shader>("resources/shader/screen/screen.vert", "resources/shader/screen/screen.frag");
     shaders["uiShader"] = std::make_shared<Shader>("resources/shader/ui/ui.vert", "resources/shader/ui/ui.frag");
-    
+    shaders["instancingShader"] = std::make_shared<Shader>("resources/shader/instancing/instancing.vert", "resources/shader/instancing/instancing.frag");
+
+    /**
+    * ████████╗███████╗██╗  ██╗████████╗██╗   ██╗██████╗ ███████╗███████╗
+    * ╚══██╔══╝██╔════╝╚██╗██╔╝╚══██╔══╝██║   ██║██╔══██╗██╔════╝██╔════╝
+    *    ██║   █████╗   ╚███╔╝    ██║   ██║   ██║██████╔╝█████╗  ███████╗
+    *    ██║   ██╔══╝   ██╔██╗    ██║   ██║   ██║██╔══██╗██╔══╝  ╚════██║
+    *    ██║   ███████╗██╔╝ ██╗   ██║   ╚██████╔╝██║  ██║███████╗███████║
+    *    ╚═╝   ╚══════╝╚═╝  ╚═╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+    */
     textures["checkered"] = std::make_shared<Texture>("resources/texture/checkered.png", GL_NEAREST);
     textures["cubemap"] = std::make_shared<Texture>("resources/texture/cubemap/skybox_2/cubemap.png");
 
+    /**
+    *  ██████╗ ██████╗      ██╗███████╗ ██████╗████████╗███████╗
+    * ██╔═══██╗██╔══██╗     ██║██╔════╝██╔════╝╚══██╔══╝██╔════╝
+    * ██║   ██║██████╔╝     ██║█████╗  ██║        ██║   ███████╗
+    * ██║   ██║██╔══██╗██   ██║██╔══╝  ██║        ██║   ╚════██║
+    * ╚██████╔╝██████╔╝╚█████╔╝███████╗╚██████╗   ██║   ███████║
+    *  ╚═════╝ ╚═════╝  ╚════╝ ╚══════╝ ╚═════╝   ╚═╝   ╚══════╝
+    */
     std::vector<Attrib> cubeAttribs {
         Attrib {
             0,
@@ -75,14 +101,17 @@ Renderer::Renderer(float width, float height) {
     Geometry::Geom cubeGeom = Geometry::createCube();
     Geometry::Geom quadGeom = Geometry::quadGeom();
     Geometry::Geom sphereGeom = Geometry::createSphere(8 * 2, 8 * 2, 1.f);
+    Geometry::Geom cylinderGeom = Geometry::createCylinder(16, 1.0f, 1.f);
+    
     
     objects["cubemapObject"] = std::make_shared<Object>(cubeGeom.vertices, cubeGeom.indices, cubeAttribs);
-
     objects["quadObject"] = std::make_shared<Object>(quadGeom.vertices, quadGeom.indices, defaultAttribs);
-    objects["quadObject"]->scale(glm::vec3(20, 1, 20))->rotate(glm::vec3(1, 0, 0), -90.f);
-
+    objects["quadObject"]->scale(glm::vec3(40, 1, 40))->rotate(glm::vec3(1, 0, 0), -90.f);
     objects["sphereObject"] = std::make_shared<Object>(sphereGeom.vertices, sphereGeom.indices, defaultAttribs);
-    objects["sphereObject"]->scale(glm::vec3(2.f))->translate(glm::vec3(0, 2.f, 0));
+    objects["sphereObject"]->scale(glm::vec3(2.f))->translate(glm::vec3(0, 2.f, 0));        
+    atomSphereObj = std::make_unique<Object>(sphereGeom.vertices, sphereGeom.indices, defaultAttribs);
+    bondCylinderObj = std::make_unique<Object>(cylinderGeom.vertices, cylinderGeom.indices, defaultAttribs);
+            
     
     [] {
         glEnable(GL_MULTISAMPLE);  
@@ -103,6 +132,115 @@ void Renderer::update(bool windowFocused, const Input& input, float deltaTime) {
     camera->update(windowFocused, input, deltaTime);
 }
 
+/**
+* ██╗███╗   ███╗ ██████╗ ██╗   ██╗██╗
+* ██║████╗ ████║██╔════╝ ██║   ██║██║
+* ██║██╔████╔██║██║  ███╗██║   ██║██║
+* ██║██║╚██╔╝██║██║   ██║██║   ██║██║
+* ██║██║ ╚═╝ ██║╚██████╔╝╚██████╔╝██║
+* ╚═╝╚═╝     ╚═╝ ╚═════╝  ╚═════╝ ╚═╝
+*/
+
+char inputBuffer[128] = "methane";
+float offsetBuffer[3] { 0.f, 4.f, 0.f };
+int atomSphereCount {0};
+int bondCylinderCount {0};
+float rotationSpeed {.1f};
+
+struct ChemistryQueueResult {
+    std::vector<glm::mat4> matricesAtoms;
+    std::vector<glm::mat4> matricesBonds;
+    int atomsCount;
+    int bondsCount;
+};
+
+std::queue<ChemistryQueueResult> chemistryQueue;
+
+void Renderer::imgui() {
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+    ImGui::Begin("Properties");
+
+
+    if (ImGui::CollapsingHeader("Camera Settings", ImGuiTreeNodeFlags_DefaultOpen)) { 
+        ImGui::InputFloat("Sensitivity", &camera->sens);
+        ImGui::InputFloat("Speed", &camera->speed);
+    }
+
+    if (ImGui::CollapsingHeader("Molecule Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+        ImGui::InputText("Compound", inputBuffer, sizeof(inputBuffer));
+        ImGui::InputFloat3("Offset", offsetBuffer);
+        ImGui::InputFloat("Rotation", &rotationSpeed);
+
+        if (ImGui::Button("Summon")) {    
+            auto doMatrixCalculations = [=] {
+                Chemistry::Molecule molecule = Chemistry::loadMolecule(inputBuffer);
+                int instanceCountAtoms = molecule.atoms.size();
+                if (instanceCountAtoms > 0) {
+                    atomSphereCount = instanceCountAtoms;
+                    bondCylinderCount = molecule.bondsCount;
+                    const float _SCALAR = 2.5f;
+                    glm::vec3 offset = glm::vec3(offsetBuffer[0], offsetBuffer[1], offsetBuffer[2]);
+                    auto instanceMatricesAtoms = Chemistry::createAtomMatrices(molecule, _SCALAR);
+                    auto instanceMatricesBonds = Chemistry::createBondMatrices(molecule, _SCALAR);    
+                    chemistryQueue.push(ChemistryQueueResult {
+                        instanceMatricesAtoms,
+                        instanceMatricesBonds,
+                        instanceCountAtoms,
+                        bondCylinderCount
+                    });
+                }    
+            };
+            std::thread matrixCalculationsThread(doMatrixCalculations);
+            matrixCalculationsThread.detach(); 
+        }
+    }
+
+    if (chemistryQueue.size() > 0) {
+        auto& chemistryQueueResult = chemistryQueue.front();
+
+        atomSphereObj->getVAO()->bind();
+        std::unique_ptr<VBO> instanceVBO = std::make_unique<VBO>();
+        instanceVBO->bind();
+        instanceVBO->data(&chemistryQueueResult.matricesAtoms.data()[0], chemistryQueueResult.atomsCount * sizeof(glm::mat4), GL_STATIC_DRAW);
+        atomSphereObj->getVAO()->attribInstanced(3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)0);
+        atomSphereObj->getVAO()->attribInstanced(4, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(sizeof(glm::vec4)));
+        atomSphereObj->getVAO()->attribInstanced(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(2 * sizeof(glm::vec4)));
+        atomSphereObj->getVAO()->attribInstanced(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(3 * sizeof(glm::vec4)));
+        instanceVBO->unbind();
+        atomSphereObj->getVAO()->unbind();
+    
+        bondCylinderObj->getVAO()->bind();
+        std::unique_ptr<VBO> instanceBondsVBO = std::make_unique<VBO>();
+        instanceBondsVBO->bind();
+        instanceBondsVBO->data(&chemistryQueueResult.matricesBonds.data()[0], chemistryQueueResult.bondsCount * sizeof(glm::mat4), GL_STATIC_DRAW);
+        bondCylinderObj->getVAO()->attribInstanced(3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)0);
+        bondCylinderObj->getVAO()->attribInstanced(4, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(sizeof(glm::vec4)));
+        bondCylinderObj->getVAO()->attribInstanced(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(2 * sizeof(glm::vec4)));
+        bondCylinderObj->getVAO()->attribInstanced(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(3 * sizeof(glm::vec4)));
+        instanceBondsVBO->unbind();
+        bondCylinderObj->getVAO()->unbind();
+    
+        instanceVBO->destroy();
+        instanceBondsVBO->destroy();
+
+        chemistryQueue.pop();
+    }
+
+
+    ImGui::End();
+}
+
+/**
+* ██████╗ ███████╗███╗   ██╗██████╗ ███████╗██████╗ ██╗███╗   ██╗ ██████╗ 
+* ██╔══██╗██╔════╝████╗  ██║██╔══██╗██╔════╝██╔══██╗██║████╗  ██║██╔════╝ 
+* ██████╔╝█████╗  ██╔██╗ ██║██║  ██║█████╗  ██████╔╝██║██╔██╗ ██║██║  ███╗
+* ██╔══██╗██╔══╝  ██║╚██╗██║██║  ██║██╔══╝  ██╔══██╗██║██║╚██╗██║██║   ██║
+* ██║  ██║███████╗██║ ╚████║██████╔╝███████╗██║  ██║██║██║ ╚████║╚██████╔╝
+* ╚═╝  ╚═╝╚══════╝╚═╝  ╚═══╝╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝ ╚═════╝ 
+*/
 void Renderer::render(float width, float height, float deltaTime) {
     fbo->bind(GL_FRAMEBUFFER);
     glEnable(GL_DEPTH_TEST);
@@ -118,43 +256,69 @@ void Renderer::render(float width, float height, float deltaTime) {
         ->SetMatrix4x4("view", camera->matrix)
         ->unuse();
 
-    objects["quadObject"]->render([] {
+    objects["quadObject"]->render([this] {
         textures["checkered"]->bind(GL_TEXTURE0);
         shaders["defaultShader"]
             ->use()
             ->SetMatrix4x4("model", objects["quadObject"]
             ->matrix)
-            ->SetVector2("texTiling", glm::vec2(10))
+            ->SetVector2("texTiling", glm::vec2(20))
             ->SetVector3("texTint", glm::vec3(1))
             ->SetFloat("metallic", 1.f)
-            ->SetVector3("cameraPos", camera->position)
+            ->SetVector3("cameraPos", this->camera->position)
             ->SetInt("tex", 0)
             ->SetInt("cubemap", 2);
     });
     shaders["defaultShader"]->unuse();
 
-    objects["sphereObject"]->render([]() {  
-        shaders["defaultShader"]
+    // objects["sphereObject"]->render([]() {  
+    //     shaders["defaultShader"]
+    //         ->use()
+    //         ->SetInt("tex", 0)
+    //         ->SetInt("normalMap", 1)
+    //         ->SetFloat("metallic", 0.f)
+    //         ->SetVector2("texTiling", glm::vec2(1))
+    //         ->SetVector3("texTint", glm::vec3(0, 0, .8))
+    //         ->SetMatrix4x4("model", objects["sphereObject"]->matrix);
+    // });
+    // // objects["sphereObject"]->getComponent<ComponentSomething>()->doSomething();
+    // textures["checkered"]->unbind();
+    // shaders["defaultShader"]->unuse();
+
+    if (atomSphereObj && bondCylinderObj) {
+        shaders["instancingShader"]
             ->use()
-            ->SetInt("tex", 0)
-            ->SetInt("normalMap", 1)
-            ->SetFloat("metallic", 0.f)
-            ->SetVector2("texTiling", glm::vec2(1))
-            ->SetVector3("texTint", glm::vec3(0, 0, .8))
-            ->SetMatrix4x4("model", objects["sphereObject"]->matrix);
-    });
-    textures["checkered"]->unbind();
-    shaders["defaultShader"]->unuse();
+            ->SetMatrix4x4("projection", camera->projection)
+            ->SetMatrix4x4("view", camera->matrix)
+            ->SetFloat("time", glfwGetTime())
+            ->SetFloat("rotationSpeed", rotationSpeed)
+            ->SetVector3("offset", glm::vec3(offsetBuffer[0], offsetBuffer[1], offsetBuffer[2]));
+
+        atomSphereObj->renderInstanced(atomSphereCount);
+        bondCylinderObj->renderInstanced(bondCylinderCount);
+
+        shaders["instancingShader"]->unuse();
+    }
 
     glDepthFunc(GL_LEQUAL);
-    objects["cubemapObject"]->render([] {
+    objects["cubemapObject"]->render([this] {
         textures["cubemap"]->bind(GL_TEXTURE2);
         shaders["cubemapShader"]
             ->use()
-            ->SetMatrix4x4("projection", camera->projection)
-            ->SetMatrix4x4("view", glm::mat4(glm::mat3(camera->matrix)))
+            ->SetMatrix4x4("projection", this->camera->projection)
+            ->SetMatrix4x4("view", glm::mat4(glm::mat3(this->camera->matrix)))
             ->SetInt("cubemap", 2);    
     });
+
+    
+    /**
+    * ███████╗██████╗  ██████╗ 
+    * ██╔════╝██╔══██╗██╔═══██╗
+    * █████╗  ██████╔╝██║   ██║
+    * ██╔══╝  ██╔══██╗██║   ██║
+    * ██║     ██████╔╝╚██████╔╝
+    * ╚═╝     ╚═════╝  ╚═════╝ 
+    */
 
     fbo->bind(GL_READ_FRAMEBUFFER);
     intermediateFBO->bind(GL_DRAW_FRAMEBUFFER);
@@ -216,6 +380,14 @@ void Renderer::refactor(float width, float height) {
     intermediateFBO->refactor(width, height);
 }
 
+/**
+*  ██████╗██╗     ███████╗ █████╗ ███╗   ██╗██╗   ██╗██████╗ 
+* ██╔════╝██║     ██╔════╝██╔══██╗████╗  ██║██║   ██║██╔══██╗
+* ██║     ██║     █████╗  ███████║██╔██╗ ██║██║   ██║██████╔╝
+* ██║     ██║     ██╔══╝  ██╔══██║██║╚██╗██║██║   ██║██╔═══╝ 
+* ╚██████╗███████╗███████╗██║  ██║██║ ╚████║╚██████╔╝██║     
+*  ╚═════╝╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝ ╚═╝     
+*/
 void Renderer::cleanup() {
     for (auto& [_, object] : objects) {
         object->destroy();
