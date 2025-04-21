@@ -8,14 +8,19 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+struct ShaderInput {
+    const char* vertexFile;
+    const char* fragmentFile; 
+    const char* geometryFile;
+};
+
 class Shader {
 private:
-    const char* vertexFile;
-    const char* fragmentFile;
+    ShaderInput info;
     int getUniformLocation(const char* uniform);
 public:
     unsigned int id;
-    Shader(const char* vertexFile, const char* fragmentFile);
+    Shader(const ShaderInput& input);
     Shader* use();
     void unuse();
     void recompile();

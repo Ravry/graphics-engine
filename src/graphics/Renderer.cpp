@@ -27,6 +27,17 @@ std::vector<std::string> texture_faces {
     "resources/texture/cubemap/skybox_1/back.png"
 };
 
+ParticleSystem particleSystem;
+VAO* vao;
+VBO* vbo;
+
+float randomFloat(float min, float max) {
+    static std::random_device rd;  // Obtain a random number generator
+    static std::mt19937 gen(rd()); // Initialize with a random seed
+    std::uniform_real_distribution<> dis(min, max); // Uniform distribution
+    return dis(gen);
+}
+
 Renderer::Renderer(float width, float height) {
     /**
     * ███████╗██╗  ██╗ █████╗ ██████╗ ███████╗██████╗ ███████╗
@@ -36,11 +47,28 @@ Renderer::Renderer(float width, float height) {
     * ███████║██║  ██║██║  ██║██████╔╝███████╗██║  ██║███████║
     * ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚══════╝╚═╝  ╚═╝╚══════╝
     */
-    shaders["defaultShader"] = std::make_shared<Shader>("resources/shader/default/default.vert", "resources/shader/default/default.frag");
-    shaders["cubemapShader"] = std::make_shared<Shader>("resources/shader/cubemap/cubemap.vert", "resources/shader/cubemap/cubemap.frag");
-    shaders["screenShader"] = std::make_shared<Shader>("resources/shader/screen/screen.vert", "resources/shader/screen/screen.frag");
-    shaders["uiShader"] = std::make_shared<Shader>("resources/shader/ui/ui.vert", "resources/shader/ui/ui.frag");
-    shaders["instancingShader"] = std::make_shared<Shader>("resources/shader/instancing/instancing.vert", "resources/shader/instancing/instancing.frag");
+    shaders["defaultShader"] = std::make_shared<Shader>(ShaderInput {"resources/shader/default/default.vert", "resources/shader/default/default.frag", nullptr});
+    shaders["cubemapShader"] = std::make_shared<Shader>(ShaderInput {"resources/shader/cubemap/cubemap.vert", "resources/shader/cubemap/cubemap.frag", nullptr});
+    shaders["screenShader"] = std::make_shared<Shader>(ShaderInput {"resources/shader/screen/screen.vert", "resources/shader/screen/screen.frag", nullptr});
+    shaders["uiShader"] = std::make_shared<Shader>(ShaderInput {"resources/shader/ui/ui.vert", "resources/shader/ui/ui.frag", nullptr});
+    shaders["instancingShader"] = std::make_shared<Shader>(ShaderInput {"resources/shader/instancing/instancing.vert", "resources/shader/instancing/instancing.frag", nullptr});
+    shaders["particleShader"] = std::make_shared<Shader>(ShaderInput {"resources/shader/particles/particles.vert", "resources/shader/particles/particles.frag", "resources/shader/particles/particles.geom"});
+    
+    const size_t PARTICLE_COUNT = 1000000;
+    for (size_t i {0}; i < PARTICLE_COUNT; i++) {
+        particleSystem.points.push_back(randomFloat(-500.f, 500.f));
+        particleSystem.points.push_back(randomFloat( 0.f, 100.f));
+        particleSystem.points.push_back(randomFloat(-500.f, 500.f));
+    }
+
+    vao = new VAO();
+    vao->bind();
+    vbo = new VBO();
+    vbo->bind();
+    vbo->data(particleSystem.points);
+    vao->attrib(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+    vao->unbind();
+    vbo->unbind();
 
     /**
     * ████████╗███████╗██╗  ██╗████████╗██╗   ██╗██████╗ ███████╗███████╗
@@ -106,7 +134,7 @@ Renderer::Renderer(float width, float height) {
     
     objects["cubemapObject"] = std::make_shared<Object>(cubeGeom.vertices, cubeGeom.indices, cubeAttribs);
     objects["quadObject"] = std::make_shared<Object>(quadGeom.vertices, quadGeom.indices, defaultAttribs);
-    objects["quadObject"]->scale(glm::vec3(40, 1, 40))->rotate(glm::vec3(1, 0, 0), -90.f);
+    objects["quadObject"]->scale(glm::vec3(500, 1, 500))->rotate(glm::vec3(1, 0, 0), -90.f);
     objects["sphereObject"] = std::make_shared<Object>(sphereGeom.vertices, sphereGeom.indices, defaultAttribs);
     objects["sphereObject"]->scale(glm::vec3(2.f))->translate(glm::vec3(0, 2.f, 0));        
     atomSphereObj = std::make_unique<Object>(sphereGeom.vertices, sphereGeom.indices, defaultAttribs);
@@ -141,11 +169,14 @@ void Renderer::update(bool windowFocused, const Input& input, float deltaTime) {
 * ╚═╝╚═╝     ╚═╝ ╚═════╝  ╚═════╝ ╚═╝
 */
 
-char inputBuffer[128] = "methane";
+char inputBuffer[128] { "methane" };
+int cid {1};
 float offsetBuffer[3] { 0.f, 4.f, 0.f };
 int atomSphereCount {0};
 int bondCylinderCount {0};
 float rotationSpeed {.1f};
+float scalar {4.f};
+bool particlesEnabled {true};
 
 struct ChemistryQueueResult {
     std::vector<glm::mat4> matricesAtoms;
@@ -163,7 +194,6 @@ void Renderer::imgui() {
 
     ImGui::Begin("Properties");
 
-
     if (ImGui::CollapsingHeader("Camera Settings", ImGuiTreeNodeFlags_DefaultOpen)) { 
         ImGui::InputFloat("Sensitivity", &camera->sens);
         ImGui::InputFloat("Speed", &camera->speed);
@@ -171,20 +201,16 @@ void Renderer::imgui() {
 
     if (ImGui::CollapsingHeader("Molecule Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::InputText("Compound", inputBuffer, sizeof(inputBuffer));
-        ImGui::InputFloat3("Offset", offsetBuffer);
-        ImGui::InputFloat("Rotation", &rotationSpeed);
-
-        if (ImGui::Button("Summon")) {    
+        if (ImGui::Button("Summon by name")) {    
             auto doMatrixCalculations = [=] {
                 Chemistry::Molecule molecule = Chemistry::loadMolecule(inputBuffer);
                 int instanceCountAtoms = molecule.atoms.size();
                 if (instanceCountAtoms > 0) {
                     atomSphereCount = instanceCountAtoms;
                     bondCylinderCount = molecule.bondsCount;
-                    const float _SCALAR = 2.5f;
                     glm::vec3 offset = glm::vec3(offsetBuffer[0], offsetBuffer[1], offsetBuffer[2]);
-                    auto instanceMatricesAtoms = Chemistry::createAtomMatrices(molecule, _SCALAR);
-                    auto instanceMatricesBonds = Chemistry::createBondMatrices(molecule, _SCALAR);    
+                    auto instanceMatricesAtoms = Chemistry::createAtomMatrices(molecule, scalar);
+                    auto instanceMatricesBonds = Chemistry::createBondMatrices(molecule, scalar);    
                     chemistryQueue.push(ChemistryQueueResult {
                         instanceMatricesAtoms,
                         instanceMatricesBonds,
@@ -196,7 +222,39 @@ void Renderer::imgui() {
             std::thread matrixCalculationsThread(doMatrixCalculations);
             matrixCalculationsThread.detach(); 
         }
+
+        ImGui::InputInt("CID", &cid);
+        if (ImGui::Button("Summon by CID")) {    
+            auto doMatrixCalculations = [=] {
+                Chemistry::Molecule molecule = Chemistry::loadMolecule(cid);
+                int instanceCountAtoms = molecule.atoms.size();
+                if (instanceCountAtoms > 0) {
+                    atomSphereCount = instanceCountAtoms;
+                    bondCylinderCount = molecule.bondsCount;
+                    glm::vec3 offset = glm::vec3(offsetBuffer[0], offsetBuffer[1], offsetBuffer[2]);
+                    auto instanceMatricesAtoms = Chemistry::createAtomMatrices(molecule, scalar);
+                    auto instanceMatricesBonds = Chemistry::createBondMatrices(molecule, scalar);    
+                    chemistryQueue.push(ChemistryQueueResult {
+                        instanceMatricesAtoms,
+                        instanceMatricesBonds,
+                        instanceCountAtoms,
+                        bondCylinderCount
+                    });
+                }
+            };
+            std::thread matrixCalculationsThread(doMatrixCalculations);
+            matrixCalculationsThread.detach(); 
+        }
+        
+        ImGui::InputFloat("Scalar", &scalar);
+        ImGui::InputFloat3("Offset", offsetBuffer);
+        ImGui::InputFloat("Rotation", &rotationSpeed);
     }
+
+    if (ImGui::CollapsingHeader("Particle Settings", 0)) { 
+        ImGui::Checkbox("enabled", &particlesEnabled);
+    }
+
 
     if (chemistryQueue.size() > 0) {
         auto& chemistryQueueResult = chemistryQueue.front();
@@ -228,7 +286,6 @@ void Renderer::imgui() {
 
         chemistryQueue.pop();
     }
-
 
     ImGui::End();
 }
@@ -298,6 +355,18 @@ void Renderer::render(float width, float height, float deltaTime) {
         bondCylinderObj->renderInstanced(bondCylinderCount);
 
         shaders["instancingShader"]->unuse();
+    }
+
+    if (particlesEnabled) {
+        shaders["particleShader"]
+        ->use()
+        ->SetMatrix4x4("projection", camera->projection)
+        ->SetMatrix4x4("view", camera->matrix);
+        vao->bind();
+        glDrawArrays(GL_POINTS, 0, static_cast<GLsizei>(particleSystem.points.size() / 3));
+        vao->unbind();
+        shaders["particleShader"]
+            ->unuse();
     }
 
     glDepthFunc(GL_LEQUAL);

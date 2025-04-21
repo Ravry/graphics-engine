@@ -47,7 +47,7 @@ FontRenderer::FontRenderer(const char* fontfile, const int fontsize) {
 
     FT_Done_Face(face);
     FT_Done_FreeType(ft);
-    shader = std::make_unique<Shader>("resources/shader/text/text.vert", "resources/shader/text/text.frag");
+    shader = std::make_unique<Shader>(ShaderInput{"resources/shader/text/text.vert", "resources/shader/text/text.frag", nullptr});
 
     vao = std::make_unique<VAO>();
     vbo = std::make_unique<VBO>();

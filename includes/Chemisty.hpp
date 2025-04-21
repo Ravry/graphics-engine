@@ -60,12 +60,64 @@ namespace Chemistry {
         return float((red << 16) | (green << 8) | blue);
     }
 
+    static Molecule loadMolecule(int cid) {
+        Molecule result;
+        std::string url = "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/" + std::to_string(cid) + "/record/JSON/?record_type=2d";
+        std::string data = fetchData(url);
+        nlohmann::json jsonData = nlohmann::json::parse(data);
+        
+        std::cout << jsonData << std::endl;
+
+        if (jsonData.contains("Fault"))
+            return result;
+
+        std::vector<int> atoms = jsonData["PC_Compounds"][0]["atoms"]["element"];
+
+        int i {0};
+        for (auto _atom : atoms)
+        {
+            Atom atom;
+
+            int center_index = jsonData["PC_Compounds"][0]["stereo"][0]["tetrahedral"]["center"];
+
+            float x_center = jsonData["PC_Compounds"][0]["coords"][0]["conformers"][0]["x"][center_index];
+            float y_center = jsonData["PC_Compounds"][0]["coords"][0]["conformers"][0]["y"][center_index];
+
+            float x_coord = jsonData["PC_Compounds"][0]["coords"][0]["conformers"][0]["x"][i];
+            float y_coord = jsonData["PC_Compounds"][0]["coords"][0]["conformers"][0]["y"][i];
+
+            x_coord -= x_center;
+            y_coord -= y_center;
+
+            float z_coord = 0;
+            atom.pos = glm::vec4(x_coord, y_coord, z_coord, _atom);
+            result.atoms.push_back(atom);
+            i++;
+        }
+
+        auto bonds = jsonData["PC_Compounds"][0]["bonds"];
+        auto aid1 = bonds["aid1"];
+        auto aid2 = bonds["aid2"];
+        auto order = bonds["order"];
+
+        for (int j {0}; j < aid1.size(); j++) {
+            Bond bond;
+            bond.idA = aid1[j];
+            bond.idB = aid2[j];
+            bond.order = order[j];
+            result.bondsCount += order[j].get<int>();
+            result.bonds.push_back(bond);
+        }
+
+        return result;
+    }
+
     static Molecule loadMolecule(std::string name) {
         Molecule result;
 
         std::string url = "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/" + name + "/record/JSON/?record_type=3d";
         std::string data = fetchData(url);
-
+        
         nlohmann::json jsonData = nlohmann::json::parse(data);
         // std::cout << jsonData << std::endl;
 
@@ -133,7 +185,7 @@ namespace Chemistry {
         std::vector<glm::mat4> instanceMatricesAtoms;
         for (int i = 0; i < molecule.atoms.size(); i++)
         {
-            glm::mat4 _matrix = glm::translate(glm::scale(glm::mat4(1), glm::vec3(1.f)), glm::vec3(molecule.atoms[i].pos) * scalar);
+            glm::mat4 _matrix = glm::translate(glm::scale(glm::mat4(1.f), glm::vec3(1.f)), glm::vec3(molecule.atoms[i].pos) * scalar);
             _matrix[3].w = colors[(int)molecule.atoms[i].pos.w];
             instanceMatricesAtoms.push_back(_matrix);
         }

@@ -3,6 +3,7 @@
 #include <memory>
 #include <thread>
 #include <queue>
+#include <random>
 #include "imgui.h"
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
@@ -15,6 +16,7 @@
 #include "Geometry.hpp"
 #include "ComponentSomething.hpp"
 #include "Chemisty.hpp"
+#include "ParticleSystem.hpp"
 
 class Renderer {
 public:
